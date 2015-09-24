@@ -20,6 +20,8 @@
 #define ADSR_REPEAT_PARAMETER_VALUE 15 // 249
 #define ADSR_SYNC_PARAMETER_VALUE 16 // 265
 
+#define UPDATE_INTERVAL 10 // ms
+
 #define PARAM_READ_INTERVAL 500 // ms
 long lastParamTime;
 
@@ -29,6 +31,12 @@ int lfo_shape;
 int lfo_offset;
 int lfo_width;
 boolean lfo_sync;
+
+// Derived values
+#define LFO_FREQ_LOW 10 // ms
+#define LFO_FREQ_HIGH 10000 // ms
+long lfoStart = 0;
+int lfoPeriodLength;
 
 // ADSR parameters
 int adsr_attack;
@@ -47,11 +55,33 @@ void setup() {
 
 void loop() {
   long curTime = millis();
+
+  // Read parameter values every PARAM_READ_INTERVAL ms
   if (curTime > lastParamTime + PARAM_READ_INTERVAL) {
     readParameter();
     lastParamTime = curTime;
   }
-  delay(100);
+
+  // Set LFO voltage
+  adjustLFO(curTime);
+
+  // Set ADSR voltage
+  adjustADSR(curTime);
+  
+  delay(UPDATE_INTERVAL - (curTime % UPDATE_INTERVAL));
+}
+
+void adjustLFO(long curTime) {
+  int position = (curTime - lfoStart) % lfoPeriodLength;
+
+  // Only saw wave for now
+  int value = map(position, 0, lfoPeriodLength, 0, 256);
+  
+  analogWrite(LFO_OUTPUT_PIN, value);
+}
+
+void adjustADSR(long curTime) {
+  
 }
 
 void readParameter() {
@@ -69,6 +99,7 @@ void handleParameter(int paramChoice) {
   switch (quantChoice) {
     case LFO_RATE_PARAMETER_VALUE:
       lfo_rate = paramValue;
+      lfoPeriodLength = map(lfo_rate, 0, 1024, LFO_FREQ_LOW, LFO_FREQ_HIGH); 
       break;
     case LFO_SHAPE_PARAMETER_VALUE:
       lfo_shape = paramValue;
