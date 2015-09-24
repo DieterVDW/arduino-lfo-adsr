@@ -20,6 +20,23 @@
 #define ADSR_REPEAT_PARAMETER_VALUE 15 // 249
 #define ADSR_SYNC_PARAMETER_VALUE 16 // 265
 
+#define PARAM_READ_INTERVAL 500 // ms
+long lastParamTime;
+
+// LFO parameters
+int lfo_rate;
+int lfo_shape;
+int lfo_offset;
+int lfo_width;
+boolean lfo_sync;
+
+// ADSR parameters
+int adsr_attack;
+int adsr_decay;
+int adsr_sustain;
+int adsr_release;
+boolean adsr_repeat;
+boolean adsr_sync;
 
 void setup() {
   pinMode(LFO_OUTPUT_PIN, OUTPUT);
@@ -29,65 +46,86 @@ void setup() {
 }
 
 void loop() {
-  int parameterChoice = analogRead(PARAMETER_INPUT_PIN);
-  if (parameterChoice != 0) {
-    handleParameter(parameterChoice);
+  long curTime = millis();
+  if (curTime > lastParamTime + PARAM_READ_INTERVAL) {
+    readParameter();
+    lastParamTime = curTime;
   }
   delay(100);
 }
 
-void handleParameter(int paramChoice) {
-  Serial.print("Parameter input detected: ");
-  Serial.print(paramChoice);
+void readParameter() {
+  int parameterChoice = analogRead(PARAMETER_INPUT_PIN);
+  if (parameterChoice != 0) {
+    handleParameter(parameterChoice);
+  }
+}
 
+void handleParameter(int paramChoice) {
   // Quantize paramChoice
   int quantChoice = map(paramChoice, 0, 1024, 0, 64);
-  Serial.print(" = ");
-  Serial.println(quantChoice);
+  int paramValue = analogRead(VALUE_INPUT_PIN);
 
   switch (quantChoice) {
     case LFO_RATE_PARAMETER_VALUE:
-      Serial.println("LFO_RATE_PARAMETER_VALUE");
+      lfo_rate = paramValue;
       break;
     case LFO_SHAPE_PARAMETER_VALUE:
-      Serial.println("LFO_SHAPE_PARAMETER_VALUE");
+      lfo_shape = paramValue;
       break;
     case LFO_OFFSET_PARAMETER_VALUE:
-      Serial.println("LFO_OFFSET_PARAMETER_VALUE");
+      lfo_offset = paramValue;
       break;
     case LFO_WIDTH_PARAMETER_VALUE:
-      Serial.println("LFO_WIDTH_PARAMETER_VALUE");
+      lfo_width = paramValue;
       break;
     case LFO_SYNC_PARAMETER_VALUE:
-      Serial.println("LFO_SYNC_PARAMETER_VALUE");
+      lfo_sync = mapBoolean(paramValue);
       break;
     case ADSR_ATTACK_PARAMETER_VALUE:
-      Serial.println("ADSR_ATTACK_PARAMETER_VALUE");
+      adsr_attack = paramValue;
       break;
     case ADSR_DECAY_PARAMETER_VALUE:
-      Serial.println("ADSR_DECAY_PARAMETER_VALUE");
+      adsr_decay = paramValue;
       break;
     case ADSR_SUSTAIN_PARAMETER_VALUE:
-      Serial.println("ADSR_SUSTAIN_PARAMETER_VALUE");
+      adsr_sustain = paramValue;
       break;
     case ADSR_RELEASE_PARAMETER_VALUE:
-      Serial.println("ADSR_RELEASE_PARAMETER_VALUE");
+      adsr_release = paramValue;
       break;
     case ADSR_U1_PARAMETER_VALUE:
-      Serial.println("ADSR_U1_PARAMETER_VALUE");
-      break;
     case ADSR_U2_PARAMETER_VALUE:
-      Serial.println("ADSR_U2_PARAMETER_VALUE");
+      // Unused for now
       break;
     case ADSR_REPEAT_PARAMETER_VALUE:
-      Serial.println("ADSR_REPEAT_PARAMETER_VALUE");
+      adsr_repeat = mapBoolean(paramValue);
       break;
     case ADSR_SYNC_PARAMETER_VALUE:
-      Serial.println("ADSR_SYNC_PARAMETER_VALUE");
+      adsr_sync = mapBoolean(paramValue);
       break;
     default:
       Serial.print("Mapping parameter failed!: ");
       Serial.println(quantChoice);
   }
+
+  Serial.print("LFO: ");
+  Serial.print(lfo_rate); Serial.print(" ");
+  Serial.print(lfo_shape); Serial.print(" ");
+  Serial.print(lfo_offset); Serial.print(" ");
+  Serial.print(lfo_width); Serial.print(" ");
+  Serial.println(lfo_sync);
+  
+  Serial.print("ADSR: ");
+  Serial.print(adsr_attack); Serial.print(" ");
+  Serial.print(adsr_decay); Serial.print(" ");
+  Serial.print(adsr_sustain); Serial.print(" ");
+  Serial.print(adsr_release); Serial.print(" ");
+  Serial.print(adsr_repeat); Serial.print(" ");
+  Serial.println(adsr_sync);
+}
+
+boolean mapBoolean(int paramValue) {
+  return map(paramValue, 0, 1024, 0, 2) == 1;
 }
 
