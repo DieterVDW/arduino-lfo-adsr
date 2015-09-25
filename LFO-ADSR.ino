@@ -27,27 +27,27 @@
 unsigned long lastParamTime;
 
 // LFO parameters
-#define LFO_PERIOD_LOW 1 // ms
-#define LFO_PERIOD_HIGH 10000 // ms
+#define LFO_FREQ_LOW 1000 // micros
+#define LFO_FREQ_HIGH 1000000 // micros
 int lfo_shape = 512;
 int lfo_offset = 0;
 int lfo_width = 255;
 boolean lfo_sync;
 unsigned long lfoStart = 0;
-unsigned long lfoPeriodLength = 500; 
+unsigned long lfoPeriodLength = 500000; 
 
 // ADSR parameters
-#define ADSR_TIME_LOW 1 // ms
-#define ADSR_TIME_HIGH 10000 // ms
-#define ADSR_TRIGGER_UPDATE_INTERVAL 1 // ms
+#define ADSR_TIME_LOW 1000 // micros
+#define ADSR_TIME_HIGH 10000000 // micros
+#define ADSR_TRIGGER_UPDATE_INTERVAL 1000 // micros
 int adsr_offset = 0;
 int adsr_width = 255;
 boolean adsr_invert = false;
 boolean adsr_repeat = false;
-unsigned long adsrAttackTime = 500; // ms
-unsigned long adsrDecayTime = 500; // ms
+unsigned long adsrAttackTime = 500000;
+unsigned long adsrDecayTime = 500000;
 unsigned long adsrSustainLevel = 255;
-unsigned long adsrReleaseTime = 500; // ms
+unsigned long adsrReleaseTime = 500000;
 int adsrStartValue;
 int adsrValue;
 
@@ -92,7 +92,7 @@ void loop() {
 }
 
 void adjustLFO(long curTime) {
-  long position = ((lfo_sync ? (curTime - lastTriggerTime) : curTime) / 1000) % lfoPeriodLength;
+  long position = (lfo_sync ? (curTime - lastTriggerTime) : curTime) % lfoPeriodLength;
 
   int value;
   if (lfo_shape == 0) {
@@ -117,7 +117,7 @@ void adjustLFO(long curTime) {
 } 
 
 void adjustADSR(long curTime) {
-  long position = (curTime - lastTriggerTime)/1000;
+  long position = curTime - lastTriggerTime;
 
   if (position == 0) {
     adsrStartValue = adsrValue;
@@ -212,17 +212,17 @@ void handleParameter(int paramChoice) {
   }
 
   Serial.print("LFO: P:");
-  Serial.print(lfoPeriodLength); Serial.print("ms S:");
+  Serial.print(lfoPeriodLength/1000); Serial.print("ms S:");
   Serial.print(lfo_shape); Serial.print(" O:");
   Serial.print(lfo_offset); Serial.print(" W:");
   Serial.print(lfo_width); Serial.print(" S:");
   Serial.println(lfo_sync);
   
   Serial.print("ADSR: A:");
-  Serial.print(adsrAttackTime); Serial.print("ms D:");
-  Serial.print(adsrDecayTime); Serial.print("ms S:");
+  Serial.print(adsrAttackTime/1000); Serial.print("ms D:");
+  Serial.print(adsrDecayTime/1000); Serial.print("ms S:");
   Serial.print(adsrSustainLevel); Serial.print(" R:");
-  Serial.print(adsrReleaseTime); Serial.print("ms O:");
+  Serial.print(adsrReleaseTime/1000); Serial.print("ms O:");
   Serial.print(adsr_offset); Serial.print(" W:");
   Serial.print(adsr_width); Serial.print(" I:");
   Serial.print(adsr_invert); Serial.print(" R:");
