@@ -5,6 +5,7 @@
 #define ADSR_OUTPUT_PIN 9
 
 #define PARAMETER_INPUT_ALLOWANCE 5
+#define ANALOG_INPUT_MAX 1005
 
 #define LFO_RATE_PARAMETER_VALUE 5 // 81
 #define LFO_SHAPE_PARAMETER_VALUE 7 // 114
@@ -23,26 +24,28 @@
 
 #define UPDATE_INTERVAL 100 // microseconds
 
-#define PARAM_READ_INTERVAL 10 // ms
+#define PARAM_READ_INTERVAL 100 // ms
 unsigned long lastParamTime;
 
 // LFO parameters
 #define LFO_PERIOD_MIN 1000 // micros
-#define LFO_PERIOD_MAX 1000000 // micros
+#define LFO_PERIOD_MAX 8000000 // micros (don't exceed 8.388.608 -> overflow)
 #define LFO_PERIOD_SLOPE 1.0
-int lfo_shape = 512;
+int lfo_shape = 0;
 int lfo_offset = 0;
 int lfo_width = 255;
 boolean lfo_sync;
 unsigned long lfoStart = 0;
 unsigned long lfoPeriodLength = 500000;
+int lfoValue;
+unsigned long peakPosition = 250000;
 
 // ADSR parameters
 #define ADSR_TIME_MIN 1000 // micros
-#define ADSR_TIME_MAX 10000000 // micros
+#define ADSR_TIME_MAX 8000000 // micros (don't exceed 8.388.608 -> overflow)
 #define ADSR_SLOPE 1.0
 #define ADSR_TRIGGER_UPDATE_INTERVAL 1000 // micros
-int adsr_offset = 0;
+int adsr_offset = 14;
 int adsr_width = 255;
 boolean adsr_invert = false;
 boolean adsr_repeat = false;
@@ -96,26 +99,24 @@ void loop() {
 void adjustLFO(long curTime) {
   long position = (lfo_sync ? (curTime - lastTriggerTime) : curTime) % lfoPeriodLength;
 
-  int value;
   if (lfo_shape == 0) {
     // Sine wave
-    value = (sin(2*PI*position/lfoPeriodLength)+1)*255.0/2.0;
+    lfoValue = (sin(2 * PI * position / lfoPeriodLength) + 1.0) * 255.0 / 2.0;
   } else {
     // Triangular wave, shape modifiable with shape parameter
-    long peakPosition = map(lfo_shape, 0, 1024, 0, lfoPeriodLength);
     if (position < peakPosition) {
-       // Ramping up
-      value = map(position, 0, peakPosition, 0, 256);
+      // Ramping up
+      lfoValue = longMapTo256(position, 1, peakPosition);
     } else {
       // Ramping down
-      value = map(position, peakPosition, lfoPeriodLength, 256, 0);
+      lfoValue = 255 - longMapTo256(position, peakPosition, lfoPeriodLength);
     }
   }
 
-  value = map(value, 0, 255, 0, lfo_width); // Scale for width
-  value = map(value, 0, 255, lfo_offset, 256); // Adjust for offset
+  lfoValue = map(lfoValue, 0, 255, 0, lfo_width); // Scale for width
+  lfoValue = map(lfoValue, 0, 255, lfo_offset, 255); // Adjust for offset
 
-  analogWrite(LFO_OUTPUT_PIN, value);
+  analogWrite(LFO_OUTPUT_PIN, lfoValue);
 }
 
 void adjustADSR(long curTime) {
@@ -131,7 +132,7 @@ void adjustADSR(long curTime) {
   if (trigger) {
     // Trigger on
     if (position < adsrAttackTime) {
-      adsrValue = map(position, 0, adsrAttackTime, adsrStartValue, 256);
+      adsrValue = map(position, 0, adsrAttackTime, adsrStartValue, 255);
     } else if (position < (adsrAttackTime + adsrDecayTime)) {
       adsrValue = map(position - adsrAttackTime, 0, adsrDecayTime, 255, adsrSustainLevel);
     } else if (adsr_repeat && position < (adsrAttackTime + adsrDecayTime + adsrReleaseTime))  {
@@ -174,12 +175,13 @@ void handleParameter(int paramChoice) {
       break;
     case LFO_SHAPE_PARAMETER_VALUE:
       lfo_shape = paramValue;
+      peakPosition = longMapFrom1024(lfo_shape, 0, lfoPeriodLength);
       break;
     case LFO_OFFSET_PARAMETER_VALUE:
-      lfo_offset = map(paramValue, 0, 1024, 0, 256);
+      lfo_offset = map(paramValue, 0, ANALOG_INPUT_MAX, 0, 255);
       break;
     case LFO_WIDTH_PARAMETER_VALUE:
-      lfo_width = map(paramValue, 0, 1024, 0, 256);
+      lfo_width = map(paramValue, 0, ANALOG_INPUT_MAX, 0, 255);
       break;
     case LFO_SYNC_PARAMETER_VALUE:
       lfo_sync = mapBoolean(paramValue);
@@ -191,16 +193,16 @@ void handleParameter(int paramChoice) {
       adsrDecayTime = slopeMap(paramValue, ADSR_TIME_MIN, ADSR_TIME_MAX, ADSR_SLOPE);
       break;
     case ADSR_SUSTAIN_PARAMETER_VALUE:
-      adsrSustainLevel = map(paramValue, 0, 1024, 0, 256);
+      adsrSustainLevel = map(paramValue, 0, ANALOG_INPUT_MAX, 0, 255);
       break;
     case ADSR_RELEASE_PARAMETER_VALUE:
       adsrReleaseTime = slopeMap(paramValue, ADSR_TIME_MIN, ADSR_TIME_MAX, ADSR_SLOPE);
       break;
     case ADSR_OFFSET_PARAMETER_VALUE:
-      adsr_offset = map(paramValue, 0, 1024, 0, 256);
+      adsr_offset = map(paramValue, 0, ANALOG_INPUT_MAX, 0, 255);
       break;
     case ADSR_WIDTH_PARAMETER_VALUE:
-      adsr_width = map(paramValue, 0, 1024, 0, 256);
+      adsr_width = map(paramValue, 0, ANALOG_INPUT_MAX, 0, 255);
       break;
     case ADSR_INVERT_PARAMETER_VALUE:
       adsr_invert = mapBoolean(paramValue);
@@ -239,8 +241,16 @@ boolean mapBoolean(int paramValue) {
  * Own map() implementation that supports big long's and slope.
  */
 long slopeMap(long paramValue, long min, long max, float slope) {
-  float index = (float)paramValue/1024;
-  paramValue -= (1 - pow(index, 2)) * 1024 * slope; // Compensate for slope
-  return (max / 1024) * paramValue;
+  long value = min + (max - min) / ANALOG_INPUT_MAX * paramValue;
+  float index = (float)paramValue / ANALOG_INPUT_MAX;
+  return value - ((max - min) * slope * index * (1.0 - pow(index, 2)));
+}
+
+long longMapFrom1024(long paramValue, long min, long max) {
+  return min + (max - min) / ANALOG_INPUT_MAX * paramValue;
+}
+
+long longMapTo256(long paramValue, long inMin, long inMax) {
+  return (paramValue - inMin) * 255 / (inMax - inMin);
 }
 
