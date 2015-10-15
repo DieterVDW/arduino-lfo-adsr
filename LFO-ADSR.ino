@@ -43,7 +43,7 @@ unsigned long peakPosition = 250000;
 #define ADSR_TIME_MAX 8000000 // micros (don't exceed 8.388.608 -> overflow)
 #define ADSR_SLOPE 1.0
 #define ADSR_TRIGGER_UPDATE_INTERVAL 1000 // micros
-int adsr_offset = 14;
+int adsr_offset = 0;
 int adsr_width = 255;
 boolean adsr_invert = false;
 boolean adsr_repeat = false;
