@@ -5,7 +5,7 @@
 #define ADSR_OUTPUT_PIN 9
 
 #define PARAMETER_INPUT_ALLOWANCE 5
-#define ANALOG_INPUT_MAX 1005
+int analog_input_max = 1000;
 
 #define LFO_RATE_PARAMETER_VALUE 5 // 81
 #define LFO_SHAPE_PARAMETER_VALUE 7 // 114
@@ -169,6 +169,11 @@ void handleParameter(int paramChoice) {
   int quantChoice = map(paramChoice, 0, 1024, 0, 64);
   int paramValue = analogRead(VALUE_INPUT_PIN);
 
+  // A bit of calibration
+  if (paramValue > analog_input_max) {
+    analog_input_max = paramValue;
+  }
+
   switch (quantChoice) {
     case LFO_RATE_PARAMETER_VALUE:
       lfoPeriodLength = slopeMap(paramValue, LFO_PERIOD_MIN, LFO_PERIOD_MAX, LFO_PERIOD_SLOPE);
@@ -178,10 +183,10 @@ void handleParameter(int paramChoice) {
       peakPosition = longMapFrom1024(lfo_shape, 0, lfoPeriodLength);
       break;
     case LFO_OFFSET_PARAMETER_VALUE:
-      lfo_offset = map(paramValue, 0, ANALOG_INPUT_MAX, 0, 255);
+      lfo_offset = map(paramValue, 0, analog_input_max, 0, 255);
       break;
     case LFO_WIDTH_PARAMETER_VALUE:
-      lfo_width = map(paramValue, 0, ANALOG_INPUT_MAX, 0, 255);
+      lfo_width = map(paramValue, 0, analog_input_max, 0, 255);
       break;
     case LFO_SYNC_PARAMETER_VALUE:
       lfo_sync = mapBoolean(paramValue);
@@ -193,16 +198,16 @@ void handleParameter(int paramChoice) {
       adsrDecayTime = slopeMap(paramValue, ADSR_TIME_MIN, ADSR_TIME_MAX, ADSR_SLOPE);
       break;
     case ADSR_SUSTAIN_PARAMETER_VALUE:
-      adsrSustainLevel = map(paramValue, 0, ANALOG_INPUT_MAX, 0, 255);
+      adsrSustainLevel = map(paramValue, 0, analog_input_max, 0, 255);
       break;
     case ADSR_RELEASE_PARAMETER_VALUE:
       adsrReleaseTime = slopeMap(paramValue, ADSR_TIME_MIN, ADSR_TIME_MAX, ADSR_SLOPE);
       break;
     case ADSR_OFFSET_PARAMETER_VALUE:
-      adsr_offset = map(paramValue, 0, ANALOG_INPUT_MAX, 0, 255);
+      adsr_offset = map(paramValue, 0, analog_input_max, 0, 255);
       break;
     case ADSR_WIDTH_PARAMETER_VALUE:
-      adsr_width = map(paramValue, 0, ANALOG_INPUT_MAX, 0, 255);
+      adsr_width = map(paramValue, 0, analog_input_max, 0, 255);
       break;
     case ADSR_INVERT_PARAMETER_VALUE:
       adsr_invert = mapBoolean(paramValue);
@@ -241,13 +246,13 @@ boolean mapBoolean(int paramValue) {
  * Own map() implementation that supports big long's and slope.
  */
 long slopeMap(long paramValue, long min, long max, float slope) {
-  long value = min + (max - min) / ANALOG_INPUT_MAX * paramValue;
-  float index = (float)paramValue / ANALOG_INPUT_MAX;
+  long value = min + (max - min) / analog_input_max * paramValue;
+  float index = (float)paramValue / analog_input_max;
   return value - ((max - min) * slope * index * (1.0 - pow(index, 2)));
 }
 
 long longMapFrom1024(long paramValue, long min, long max) {
-  return min + (max - min) / ANALOG_INPUT_MAX * paramValue;
+  return min + (max - min) / analog_input_max * paramValue;
 }
 
 long longMapTo256(long paramValue, long inMin, long inMax) {
