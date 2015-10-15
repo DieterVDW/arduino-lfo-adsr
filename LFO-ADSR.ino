@@ -22,8 +22,6 @@ int analog_input_max = 1000;
 #define ADSR_INVERT_PARAMETER_VALUE 15 // 249
 #define ADSR_REPEAT_PARAMETER_VALUE 16 // 265
 
-#define UPDATE_INTERVAL 100 // microseconds
-
 #define PARAM_READ_INTERVAL 100 // ms
 unsigned long lastParamTime;
 
@@ -92,8 +90,6 @@ void loop() {
 
   // Set LFO voltage
   adjustLFO(curTime);
-
-  delayMicroseconds(UPDATE_INTERVAL - (curTime % UPDATE_INTERVAL));
 }
 
 void adjustLFO(long curTime) {
