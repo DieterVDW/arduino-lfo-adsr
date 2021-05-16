@@ -6,6 +6,8 @@ http://littlebits.cc/projects/adsr-lfo-super-modulator-for-arduino-bit .
 Kudos to blindbento for imagining this project! (Especially the creative use of the keyboard as parameter selector).
 Unfortunatly the source code was removed. So this is an attempt to recreate this.
 
+Youtube demo: https://www.youtube.com/watch?v=FogWQbIRJKc
+
 This is my first Arduino project, and it is implemented very naïvely. I'm sure this can be optimized quite a bit, but it is working suprisingly well!
 
 See the project mentioned above for setup.
