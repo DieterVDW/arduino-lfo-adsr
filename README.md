@@ -2,9 +2,9 @@
 LittleBits Arduino LFO ADSR implementation
 
 Inspired this project:
-http://littlebits.cc/projects/adsr-lfo-super-modulator-for-arduino-bit .
+https://classroom.littlebits.com/inventions/adsr-lfo-super-modulator-for-arduino-bit.
 Kudos to blindbento for imagining this project! (Especially the creative use of the keyboard as parameter selector).
-Unfortunatly the source code was removed. So this is an attempt to recreate this.
+Unfortunately the source code was removed. So this is an attempt to recreate this.
 
 Youtube demo: https://www.youtube.com/watch?v=FogWQbIRJKc
 
@@ -49,4 +49,4 @@ Duration: 10 minutes
 
 Credits:
 
-Inspired by this project: http://littlebits.cc/projects/adsr-lfo-super-modulator-for-arduino-bit . Kudos to blindbento for imagining this project!
+Inspired by this project: https://classroom.littlebits.com/inventions/adsr-lfo-super-modulator-for-arduino-bit. Kudos to blindbento for imagining this project!
